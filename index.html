@@ -1,0 +1,204 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Toepen</title>
+  </head>
+  <style type="text/css" media="all">
+    :root {
+      color-scheme: light dark;
+    }
+    body {
+      background: light-dark(#fff, #222);
+      color: light-dark(#222, #fff);
+      display: flex;
+      flex-direction: column;
+      font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS",
+        sans-serif;
+      gap: 1rem;
+    }
+    header form {
+      align-items: baseline;
+      display: flex;
+      gap: 1rem;
+    }
+    input {
+      color: light-dark(#222, #fff);
+    }
+    button,
+    input[type="submit"] {
+      cursor: pointer;
+    }
+    button,
+    input[type="submit"] {
+      border: none;
+      border-radius: 2px;
+      color: #fff;
+      padding: 0.3rem 0.5rem;
+    }
+    button {
+      background: dodgerblue;
+    }
+    input[type="submit"] {
+      background: seagreen;
+    }
+    ul {
+      /* I'm very much aware <table> exists */
+      align-items: baseline;
+      display: inline-grid;
+      gap: 0.5rem;
+      grid-template-columns: 1rem 1fr 1fr min-content min-content;
+      padding-left: 0;
+    }
+    ul li {
+      display: contents;
+    }
+    li::before {
+      content: "";
+      justify-self: center;
+    }
+    .pelt {
+      color: orangered;
+    }
+    li.pelt::before {
+      content: "\26A0\FE0F";
+    }
+    .dead {
+      color: gray;
+    }
+    li.dead::before {
+      content: "\2620\FE0F";
+    }
+    span {
+      white-space: nowrap;
+    }
+    .score {
+      justify-self: end;
+    }
+    .plus,
+    .minus {
+      padding: 0.3rem 0.5rem;
+    }
+    dl {
+      align-items: baseline;
+      display: grid;
+      gap: 0.2rem 0.3rem;
+      grid-template-columns: min-content auto;
+    }
+    dd {
+      margin: 0;
+    }
+  </style>
+  <script type="module" defer>
+    customElements.define(
+      "ik-toep",
+      class extends HTMLElement {
+        connectedCallback() {
+          const ul = this.querySelector("ul");
+          const tpl = this.querySelector("ul + template").content;
+
+          const qs = new URLSearchParams(window.location.search);
+          const limit = Number(qs.get("limit")) || 15;
+          const players = Number(qs.get("players")) || 4;
+
+          this.querySelector('header input[name="limit"]').valueAsNumber =
+            limit;
+          this.querySelector('header input[name="players"]').valueAsNumber =
+            players;
+
+          const editHandler = () =>
+            document.execCommand("selectAll", false, null);
+          const scoreHandler = function ({ target }) {
+            const li = target.parentElement;
+            const span = li.querySelector(".score");
+            const score =
+              (Number(span.textContent) || 0) + (Number(target.value) || 1);
+            span.textContent = score > limit ? limit : score;
+
+            if (score === limit - 1) {
+              li.classList.remove("dead");
+              li.classList.add("pelt");
+            } else if (score >= limit) {
+              li.classList.remove("pelt");
+              li.classList.add("dead");
+            } else {
+              li.classList.remove(...li.classList);
+            }
+          };
+
+          ul.replaceChildren(
+            ...Array.from({ length: players }, (_, idx) => {
+              const id = idx + 1;
+              const li = tpl.cloneNode(true).firstElementChild;
+              const name = li.querySelector(".name");
+              const score = li.querySelector(".score");
+
+              name.textContent += id;
+
+              name.setAttribute("tabindex", id);
+              score.setAttribute("tabindex", id + players);
+
+              name.addEventListener("focus", editHandler);
+              score.addEventListener("focus", editHandler);
+              li.querySelector(".plus").addEventListener("click", scoreHandler);
+              li.querySelector(".minus").addEventListener(
+                "click",
+                scoreHandler,
+              );
+
+              return li;
+            }),
+          );
+        }
+      },
+    );
+  </script>
+  <body is="ik-toep">
+    <h1>Toepen</h1>
+    <header>
+      <form>
+        <label
+          >Spelers
+          <input
+            type="number"
+            name="players"
+            value="3"
+            min="2"
+            max="8"
+            step="1"
+          />
+        </label>
+        <label>
+          Punten
+          <input
+            type="number"
+            name="limit"
+            value="15"
+            min="1"
+            max="99"
+            step="1"
+          />
+        </label>
+        <input type="submit" value="Nieuw spel" />
+      </form>
+    </header>
+    <main>
+      <ul></ul>
+      <template>
+        <li>
+          <span class="name" contenteditable>Speler </span>
+          <span class="score" contenteditable>0</span>
+          <button class="plus" value="1">+</button>
+          <button class="minus" value="-1">-</button>
+        </li>
+      </template>
+    </main>
+    <footer>
+      <dl>
+        <dt>&#x26A0;&#xFE0F;</dt>
+        <dd class="pelt">Pelt</dd>
+        <dt>&#x2620;&#xFE0F;</dt>
+        <dd class="dead">Dood</dd>
+      </dl>
+    </footer>
+  </body>
+</html>
